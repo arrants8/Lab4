@@ -26,13 +26,13 @@ team_t team = {
     /* Team name */
     "luv2code",
     /* First member's full name */
-    "",
+    "Samuel Arrants",
     /* First member's email address */
-    "",
+    "samarrants@u.northwestern.edu",
     /* Second member's full name (leave blank if none) */
-    "",
+    "Lindsay Wilson",
     /* Second member's email address (leave blank if none) */
-    ""
+    "lindsaywilson2020@u.northwestern.edu"
 };
 
 /* single word (4) or double word (8) alignment */
