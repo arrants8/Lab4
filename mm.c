@@ -48,8 +48,11 @@ team_t team = {
  * mm_init - initialize the malloc package.
  */
 int mm_init(void)
-{
+{   mem_heap = (char *)Malloc(MAX_HEAP);
+    mem_brk = (char *)mem_heap;
+    mem_max_addr = (char *)(mem_heap + MAX_HEAP);
     return 0;
+    // if error, return -1//
 }
 
 /* 
