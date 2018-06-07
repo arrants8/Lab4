@@ -197,11 +197,28 @@ void *mm_malloc(size_t size)
     else
         asize = DSIZE * ((size + (DSIZE) + (DSIZE-1)) / DSIZE);
     
+    
+    
     //search the free list for a fit
+    
+    //for explicit list, we want to jump from prologue -> free block -> free block
+    
+    currnode = prologue.next
+     if currnode.size < asize {
+        currnode = currnode.next}
+     if ((bp = find_fit(asize)) != NULL){
+        place(bp, asize);
+         // currnode.prev.next = currnode.next
+         // currnode.next.prev = currnode.prev
+        return bp;
+     }
+     
+    
+    /*
     if ((bp = find_fit(asize)) != NULL){
         place(bp, asize);
         return bp;
-    }
+    }*/
     
     // No fit found. Get more memory and place the block
     extendsize = MAX(asize, CHUNKSIZE);
@@ -221,6 +238,11 @@ void mm_free(void *bp)
     PUT(HDRP(bp), PACK(size, 0));
     PUT(FTRP(bp), PACK(size, 0));
     coalesce(bp);
+    
+    
+    
+    
+    
 }
 
 
