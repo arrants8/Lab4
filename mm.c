@@ -70,7 +70,13 @@ team_t team = {
 /* 
  * mm_init - initialize the malloc package.
  */
+//helper functions
 static char *heap_listp;
+static void *coalesce(void *bp);
+static void *extend_heap(size_t words);
+static void *find_fit(size_t asize);
+static void place(void *bp, size_t asize);
+
 static void *coalesce(void *bp)
 {
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
@@ -230,7 +236,7 @@ void *mm_realloc(void *ptr, size_t size)
         mm_free(ptr);
     }
     else{
-        return &ptr;
+        return ptr;
     }
     /*void *oldptr = ptr;
     void *newptr;
