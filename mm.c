@@ -284,9 +284,7 @@ void *mm_realloc(void *ptr, size_t size)
         return ptr;
     } 
     /*void *oldptr = ptr;
-=======
-    void *oldptr = ptr;
->>>>>>> 5ce7d89615c8fb40319891d9bf18d82eed7c6f84
+ 
     void *newptr;
     size_t copySize;
     
