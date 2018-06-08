@@ -279,15 +279,19 @@ void *mm_realloc(void *ptr, size_t size)
     if(size == 0){
         mm_free(ptr);
     }
+    
+    
     else{
-        return ptr;
-    } 
-    /*void *oldptr = ptr;
+    
+     
+    void *oldptr = ptr;
  
     void *newptr;
+        
     size_t copySize;
     
     newptr = mm_malloc(size);
+        
     if (newptr == NULL){
       return NULL;
     }
