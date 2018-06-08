@@ -273,7 +273,6 @@ void mm_free(void *bp)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
-<<<<<<< HEAD
     if(ptr == NULL){
         mm_malloc(size);
     }
