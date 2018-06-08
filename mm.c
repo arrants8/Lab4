@@ -42,7 +42,7 @@ team_t team = {
 #define ALIGN(size) (((size) + (ALIGNMENT-1)) & ~0x7)
 
 
-#define SIZE_T_SIZE (ALIGN(sizeof(size_t))
+#define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 #define WSIZE 4 /* Word and header/footer size (bytes) */
 #define DSIZE 8 /* double word size (bytes) */
 #define CHUNKSIZE (1<<12) /* extend heap by this amount (bytes) */
@@ -85,6 +85,8 @@ static void *coalesce(void *bp)
     
     //Case 1
     if (prev_alloc && next_alloc){
+        //currnode.prev = most recent free block
+        //currnode.next = closest free block
         return bp;
     }
     
@@ -229,28 +231,22 @@ void mm_free(void *bp)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
-    if(ptr == NULL){
-        mm_malloc(size);
-    }
-    if(size == 0){
-        mm_free(ptr);
-    }
-    else{
-        return ptr;
-    }
-    /*void *oldptr = ptr;
+    void *oldptr = ptr;
     void *newptr;
     size_t copySize;
     
     newptr = mm_malloc(size);
-    if (newptr == NULL)
+    if (newptr == NULL){
       return NULL;
+    }
     copySize = *(size_t *)((char *)oldptr - SIZE_T_SIZE);
-    if (size < copySize)
+
+    if (size < copySize){
       copySize = size;
+    }
     memcpy(newptr, oldptr, copySize);
     mm_free(oldptr);
-    return newptr;*/
+    return newptr;
 }
 
 
