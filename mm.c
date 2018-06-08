@@ -60,6 +60,14 @@ team_t team = {
 #define GET_SIZE(p) (GET(p) & ~0x7)
 #define GET_ALLOC(p) (GET(p) & 0x1)
 
+
+/* Read the previous and next of the node */
+#define GET_PREV(p) ((unsigned int *)GET(p) + 1) //this should be the address of prev node
+#define GET_NEXT(p) ((unsigned int *)GET(p) + 2) //this should be the address of next node
+
+
+
+
 /* Given block pointer bp, find address of its header and footer */
 #define HDRP(bp) ((char *)(bp) - WSIZE)
 #define FTRP(bp) ((char *)(bp) + GET_SIZE(HDRP(bp)) - DSIZE)
@@ -199,7 +207,24 @@ void *mm_malloc(size_t size)
     else
         asize = DSIZE * ((size + (DSIZE) + (DSIZE-1)) / DSIZE);
     
+    
+    
     //search the free list for a fit
+    
+    //for explicit list, we want to jump from prologue -> free block -> free block
+    /* Sam sudo code
+    currnode = prologue.next
+     if currnode.size < asize {
+        currnode = currnode.next}
+     if ((bp = find_fit(asize)) != NULL){
+        place(bp, asize);
+         // currnode.prev.next = currnode.next
+         // currnode.next.prev = currnode.prev
+        return bp;
+     }*/
+     
+    
+    
     if ((bp = find_fit(asize)) != NULL){
         place(bp, asize);
         return bp;
@@ -223,6 +248,11 @@ void mm_free(void *bp)
     PUT(HDRP(bp), PACK(size, 0));
     PUT(FTRP(bp), PACK(size, 0));
     coalesce(bp);
+    
+    
+    
+    
+    
 }
 
 
