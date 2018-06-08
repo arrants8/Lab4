@@ -62,10 +62,8 @@ team_t team = {
 
 
 /* Read the previous and next of the node */
-#define GET_PREV(p) ((unsigned int *)GET(p) + 1) //this should be the address of prev node
-#define GET_NEXT(p) ((unsigned int *)GET(p) + 2) //this should be the address of next node
-
-
+#define GET_PREV(p) (GET(p + (1*WSIZE)) //this should be the address of prev node
+#define GET_NEXT(p) (GET(p + (2*WSIZE)) //this should be the address of next node
 
 
 /* Given block pointer bp, find address of its header and footer */
@@ -84,6 +82,17 @@ static void *coalesce(void *bp);
 static void *extend_heap(size_t words);
 static void *find_fit(size_t asize);
 static void place(void *bp, size_t asize);
+static void removenode(void *bp)
+static void addnode(void *bp)
+
+
+static void removenode(void *bp){
+/*
+    currnode.prev.next = currnode.next
+    currnode.next.prev = currnode. prev*/
+}
+
+
 
 static void *coalesce(void *bp)
 {
@@ -144,6 +153,9 @@ int mm_init(void)
     if((heap_listp = mem_sbrk(4*WSIZE)) == (void *)-1)
         return -1;
     PUT(heap_listp, 0);                             // Alignment padding
+    //below, we want the prologue to function like a free block.
+    // prologue.next should be address to first free block. still allowed a header and footer.
+    //Why is there padding in the inital version of this?
     PUT(heap_listp + (1*WSIZE), PACK(DSIZE, 1));    // prologue header
     PUT(heap_listp + (2*WSIZE), PACK(DSIZE, 1));    // prologue footer
     PUT(heap_listp + (3*WSIZE), PACK(0,1));         // epilogue header
@@ -162,7 +174,7 @@ int mm_init(void)
  *     Always allocate a block whose size is a multiple of the alignment.
  */
 static void *find_fit(size_t asize)
-{
+{   // this is where we go from address to address
     // first-fit search
     void *bp;
     
@@ -222,7 +234,7 @@ void *mm_malloc(size_t size)
      }*/
      
     
-    
+    //search the free list for a fit
     if ((bp = find_fit(asize)) != NULL){
         place(bp, asize);
         return bp;
@@ -267,7 +279,7 @@ void *mm_realloc(void *ptr, size_t size)
     }
     else{
         return ptr;
-    }
+    } 
     /*void *oldptr = ptr;
     void *newptr;
     size_t copySize;
