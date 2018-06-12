@@ -1,6 +1,6 @@
 /*
  * mm-naive.c - The fastest, least memory-efficient malloc package.
- * 
+ *
  * In this naive approach, a block is allocated by simply incrementing
  * the brk pointer.  A block is pure payload. There are no headers or
  * footers.  Blocks are never coalesced or reused. Realloc is
@@ -60,12 +60,6 @@ team_t team = {
 #define GET_SIZE(p) (GET(p) & ~0x7)
 #define GET_ALLOC(p) (GET(p) & 0x1)
 
-
-/* Read the previous and next of the node */
-#define GET_PREV(p) (GET(p + (1*WSIZE)) //this should be the address of prev node
-#define GET_NEXT(p) (GET(p + (2*WSIZE)) //this should be the address of next node
-
-
 /* Given block pointer bp, find address of its header and footer */
 #define HDRP(bp) ((char *)(bp) - WSIZE)
 #define FTRP(bp) ((char *)(bp) + GET_SIZE(HDRP(bp)) - DSIZE)
@@ -73,7 +67,10 @@ team_t team = {
 /* Given block poitner bp, find address of next and previous blocks */
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
-/* 
+
+#define GET_BLOCKHDR(bp) ((char *)(bp) - WSIZE)
+#define GET_CURR_SIZE(bp) (GET_SIZE(GET_BLOCKHDR(bp)))
+/*
  * mm_init - initialize the malloc package.
  */
 //helper functions
@@ -82,17 +79,6 @@ static void *coalesce(void *bp);
 static void *extend_heap(size_t words);
 static void *find_fit(size_t asize);
 static void place(void *bp, size_t asize);
-static void removenode(void *bp)
-static void addnode(void *bp)
-
-
-static void removenode(void *bp){
-/*
-    currnode.prev.next = currnode.next
-    currnode.next.prev = currnode. prev*/
-}
-
-
 
 static void *coalesce(void *bp)
 {
@@ -155,9 +141,6 @@ int mm_init(void)
     if((heap_listp = mem_sbrk(4*WSIZE)) == (void *)-1)
         return -1;
     PUT(heap_listp, 0);                             // Alignment padding
-    //below, we want the prologue to function like a free block.
-    // prologue.next should be address to first free block. still allowed a header and footer.
-    //Why is there padding in the inital version of this?
     PUT(heap_listp + (1*WSIZE), PACK(DSIZE, 1));    // prologue header
     PUT(heap_listp + (2*WSIZE), PACK(DSIZE, 1));    // prologue footer
     PUT(heap_listp + (3*WSIZE), PACK(0,1));         // epilogue header
@@ -171,12 +154,12 @@ int mm_init(void)
 
 
 
-/* 
+/*
  * mm_malloc - Allocate a block by incrementing the brk pointer.
  *     Always allocate a block whose size is a multiple of the alignment.
  */
 static void *find_fit(size_t asize)
-{   // this is where we go from address to address
+{
     // first-fit search
     void *bp;
     
@@ -219,23 +202,6 @@ void *mm_malloc(size_t size)
     else
         asize = DSIZE * ((size + (DSIZE) + (DSIZE-1)) / DSIZE);
     
-    
-    
-    //search the free list for a fit
-    
-    //for explicit list, we want to jump from prologue -> free block -> free block
-    /* Sam sudo code
-    currnode = prologue.next
-     if currnode.size < asize {
-        currnode = currnode.next}
-     if ((bp = find_fit(asize)) != NULL){
-        place(bp, asize);
-         // currnode.prev.next = currnode.next
-         // currnode.next.prev = currnode.prev
-        return bp;
-     }*/
-     
-    
     //search the free list for a fit
     if ((bp = find_fit(asize)) != NULL){
         place(bp, asize);
@@ -260,11 +226,6 @@ void mm_free(void *bp)
     PUT(HDRP(bp), PACK(size, 0));
     PUT(FTRP(bp), PACK(size, 0));
     coalesce(bp);
-    
-    
-    
-    
-    
 }
 
 
@@ -273,38 +234,31 @@ void mm_free(void *bp)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
+    /*
     if(ptr == NULL){
         mm_malloc(size);
     }
-    if(size == 0){
+    else if(size == 0){
         mm_free(ptr);
     }
-    
-    
-    else{
-    
-     
+     */
     void *oldptr = ptr;
- 
     void *newptr;
-        
     size_t copySize;
     
     newptr = mm_malloc(size);
-        
     if (newptr == NULL){
-      return NULL;
+        return NULL;
     }
-    copySize = *(size_t *)((char *)oldptr - SIZE_T_SIZE);
-
+    copySize = GET_CURR_SIZE(oldptr);
+    
     if (size < copySize){
-      copySize = size;
+        copySize = size;
     }
     memcpy(newptr, oldptr, copySize);
     mm_free(oldptr);
     return newptr;
 }
-
 
 
 
