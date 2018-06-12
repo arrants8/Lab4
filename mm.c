@@ -1,10 +1,7 @@
 /*
  * mm-naive.c - The fastest, least memory-efficient malloc package.
  *
- * In this naive approach, a block is allocated by simply incrementing
- * the brk pointer.  A block is pure payload. There are no headers or
- * footers.  Blocks are never coalesced or reused. Realloc is
- * implemented directly using mm_malloc and mm_free.
+ * In this approach, we used an implicit free list. In each block, there is a header, then a "size" number of bytes allocated for the payload, followed by a footer. Coalesce is used to combine free blocks in succession. When free is called on a block, the allocated bit in the block's header and footer changes to zero. Realloc reallocates space in the heap.
  *
  * NOTE TO STUDENTS: Replace this header comment with your own header
  * comment that gives a high level description of your solution.
@@ -64,15 +61,14 @@ team_t team = {
 #define HDRP(bp) ((char *)(bp) - WSIZE)
 #define FTRP(bp) ((char *)(bp) + GET_SIZE(HDRP(bp)) - DSIZE)
 
-/* Given block poitner bp, find address of next and previous blocks */
+/* Given block pointer bp, find address of next and previous blocks */
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp) - WSIZE)))
 #define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE(((char *)(bp) - DSIZE)))
 
+/* getting size of block header */
 #define GET_BLOCKHDR(bp) ((char *)(bp) - WSIZE)
 #define GET_CURR_SIZE(bp) (GET_SIZE(GET_BLOCKHDR(bp)))
-/*
- * mm_init - initialize the malloc package.
- */
+
 //helper functions
 static char *heap_listp;
 static void *coalesce(void *bp);
@@ -80,27 +76,26 @@ static void *extend_heap(size_t words);
 static void *find_fit(size_t asize);
 static void place(void *bp, size_t asize);
 
+/* Coalesce combines blocks together if both free after calling mm_free */
 static void *coalesce(void *bp)
 {
     size_t prev_alloc = GET_ALLOC(FTRP(PREV_BLKP(bp)));
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t size = GET_SIZE(HDRP(bp));
     
-    //Case 1
+    //Case 1: if neither the preceding or succeeding blocks are free
     if (prev_alloc && next_alloc){
-        //currnode.prev = most recent free block
-        //currnode.next = closest free block
         return bp;
     }
     
-    //Case 2
+    //Case 2: if the succeeding block is free
     else if(prev_alloc && !next_alloc){
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
         PUT(HDRP(bp), PACK(size, 0));
         PUT(FTRP(bp), PACK(size, 0));
     }
     
-    //Case 3
+    //Case 3: if preceding block is free
     else if(!prev_alloc && next_alloc){
         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
         PUT(FTRP(bp), PACK(size, 0));
@@ -108,7 +103,7 @@ static void *coalesce(void *bp)
         bp = PREV_BLKP(bp);
     }
     
-    //Case 4
+    //Case 4: if both preceding and succeeding blocks are free
     else{
         size += GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(FTRP(NEXT_BLKP(bp)));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
@@ -117,6 +112,8 @@ static void *coalesce(void *bp)
     }
     return bp;
 }
+
+/* extend_heap extends the size of the heap when there is no appropriate block for allocating */
 static void *extend_heap(size_t words)
 {
     char *bp;
@@ -135,6 +132,9 @@ static void *extend_heap(size_t words)
     //Coalesce if the previous block was free
     return coalesce(bp);
 }
+/*
+ * mm_init - initialize the malloc package.
+ */
 int mm_init(void)
 {
     /* Create the intitial empty heap */
@@ -154,10 +154,7 @@ int mm_init(void)
 
 
 
-/*
- * mm_malloc - Allocate a block by incrementing the brk pointer.
- *     Always allocate a block whose size is a multiple of the alignment.
- */
+/* find_fit uses a first-fit search approach to determine the first block that can be allocated */
 static void *find_fit(size_t asize)
 {
     // first-fit search
@@ -171,6 +168,7 @@ static void *find_fit(size_t asize)
     return NULL; //no fit
 }
 
+/* place allocates block by setting size and availabilty in header and footer */
 static void place(void *bp, size_t asize){
     size_t csize = GET_SIZE(HDRP(bp));
     
@@ -186,6 +184,9 @@ static void place(void *bp, size_t asize){
         PUT(FTRP(bp), PACK(csize, 1));
     }
 }
+/*
+ * mm_malloc - Allocate a block by traversing the heap until an appropriate block is found. If no appropriate block is available, the heap is extended. It allocates by setting the header and footer.
+ */
 void *mm_malloc(size_t size)
 {
     size_t asize; // adjusted block size
@@ -193,14 +194,17 @@ void *mm_malloc(size_t size)
     char *bp;
     
     //ignore spurious requests
-    if(size == 0)
+    if(size == 0){
         return NULL;
+    }
     
     // adjust block size to include overhead and alignment reqs
-    if (size <= DSIZE)
+    if (size <= DSIZE){
         asize = 2*DSIZE;
-    else
+    }
+    else{
         asize = DSIZE * ((size + (DSIZE) + (DSIZE-1)) / DSIZE);
+    }
     
     //search the free list for a fit
     if ((bp = find_fit(asize)) != NULL){
@@ -210,14 +214,15 @@ void *mm_malloc(size_t size)
     
     // No fit found. Get more memory and place the block
     extendsize = MAX(asize, CHUNKSIZE);
-    if ((bp = extend_heap(extendsize/WSIZE)) == NULL)
+    if ((bp = extend_heap(extendsize/WSIZE)) == NULL){
         return NULL;
+    }
     place(bp, asize);
     return bp;
 }
 
 /*
- * mm_free - Freeing a block does nothing.
+ * mm_free - Changes the allocated bit in the header and footer to zero and then coalesces.
  */
 void mm_free(void *bp)
 {
@@ -234,14 +239,6 @@ void mm_free(void *bp)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
-    /*
-    if(ptr == NULL){
-        mm_malloc(size);
-    }
-    else if(size == 0){
-        mm_free(ptr);
-    }
-     */
     void *oldptr = ptr;
     void *newptr;
     size_t copySize;
@@ -261,7 +258,25 @@ void *mm_realloc(void *ptr, size_t size)
 }
 
 
-
+int mm_check(void){
+    void *bp;
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)){
+        /* if header and footer don't match */
+        if(GET_ALLOC(HDRP(bp)) != GET_ALLOC(FTRP(bp))){
+            return 0;
+        }
+        /* if blocks escaped coalescing */
+        else if(GET_ALLOC(bp) == 0 && GET_ALLOC(NEXT_BLKP(bp)) == 0){
+            return 0;
+        }
+        /* if blocks are overlapping */
+        else if(FTRP(bp) >= NEXT_BLKP(bp)){
+            return 0;
+        }
+    }
+    
+    return 1;
+}
 
 
 
